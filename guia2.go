@@ -14,9 +14,8 @@ import (
 // HTTPClient is the default client to use to communicate with the WebDriver server.
 var HTTPClient = http.DefaultClient
 
-// type MobileDriver struct{}
-// type MobileElement struct{}
-// type MobileSelector struct{}
+var DefaultWaitTimeout = time.Second * 60
+var DefaultWaitInterval = time.Millisecond * 250
 
 type RawResponse []byte
 

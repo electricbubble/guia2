@@ -785,3 +785,56 @@ func TestDriver_FindElements(t *testing.T) {
 	}
 	t.Log(len(elements))
 }
+
+func TestDriver_WaitWithTimeoutAndInterval(t *testing.T) {
+	driver, err := NewDriver(nil, uiaServerURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	element, err := driver.FindElement(BySelector{UiAutomator: "new UiSelector().className(\"android.view.ViewGroup\");"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	elem, err := element.FindElement(BySelector{UiAutomator: "new UiSelector().className(\"android.widget.LinearLayout\").index(6);"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rect, err := elem.Rect()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	x := rect.X + int(float64(rect.Width)*2)
+	y := rect.Y + rect.Height/2
+	err = driver.Tap(x, y)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	by := BySelector{UiAutomator: "new UiSelector().text(\"科技\");"}
+	exists := func(d *Driver) (bool, error) {
+		element, err = d.FindElement(by)
+		if err == nil {
+			return true, nil
+		}
+		return false, nil
+	}
+
+	err = driver.WaitWithTimeoutAndInterval(exists, 1, 0.1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// element, err = driver.FindElement(by)
+	// if err != nil {
+	// 	t.Fatal(err)
+	// }
+
+	err = element.Click()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+}

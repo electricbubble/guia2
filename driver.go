@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"time"
 )
 
 type Driver struct {
@@ -922,4 +923,42 @@ func (d *Driver) FindElements(by BySelector) (elements []*Element, err error) {
 
 func (d *Driver) FindElement(by BySelector) (elem *Element, err error) {
 	return d._findElement(by.getMethodAndSelector())
+}
+
+type Condition func(s *Driver) (bool, error)
+
+func (d *Driver) _waitWithTimeoutAndInterval(condition Condition, timeout, interval time.Duration) (err error) {
+	startTime := time.Now()
+	for {
+		done, err := condition(d)
+		if err != nil {
+			return err
+		}
+		if done {
+			return nil
+		}
+
+		if elapsed := time.Since(startTime); elapsed > timeout {
+			return fmt.Errorf("timeout after %v", elapsed)
+		}
+		time.Sleep(interval)
+	}
+}
+
+// WaitWithTimeoutAndInterval waits for the condition to evaluate to true.
+func (d *Driver) WaitWithTimeoutAndInterval(condition Condition, timeout, interval float64) (err error) {
+	dTimeout := time.Millisecond * time.Duration(timeout*1000)
+	dInterval := time.Millisecond * time.Duration(interval*1000)
+	return d._waitWithTimeoutAndInterval(condition, dTimeout, dInterval)
+}
+
+// WaitWithTimeout works like WaitWithTimeoutAndInterval, but with default polling interval.
+func (d *Driver) WaitWithTimeout(condition Condition, timeout float64) error {
+	dTimeout := time.Millisecond * time.Duration(timeout*1000)
+	return d._waitWithTimeoutAndInterval(condition, dTimeout, DefaultWaitInterval)
+}
+
+// Wait works like WaitWithTimeoutAndInterval, but using the default timeout and polling interval.
+func (d *Driver) Wait(condition Condition) error {
+	return d._waitWithTimeoutAndInterval(condition, DefaultWaitTimeout, DefaultWaitInterval)
 }
