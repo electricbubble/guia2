@@ -24,7 +24,6 @@ package main
 import (
 	"github.com/electricbubble/guia2"
 	"log"
-	"time"
 )
 
 func main() {
@@ -52,61 +51,34 @@ func main() {
 	err = driver.SwipePointF(startPoint, endPoint)
 	checkErr(err)
 
-	element, err := driver.FindElement(guia2.BySelector{UiAutomator: "new UiSelector().className(\"android.view.ViewGroup\");"})
+	element, err := driver.FindElement(guia2.BySelector{UiAutomator: "new UiSelector().textStartsWith(\"MIUI\");"})
 	checkErr(err)
-
-	elem, err := element.FindElement(guia2.BySelector{UiAutomator: "new UiSelector().className(\"android.widget.LinearLayout\").index(6);"})
-	checkErr(err)
-
-	rect, err := elem.Rect()
-	checkErr(err)
-
-	x := rect.X + int(float64(rect.Width)*2)
-	y := rect.Y + rect.Height/2
-	err = driver.Tap(x, y)
-	checkErr(err)
-
-	time.Sleep(time.Millisecond * 600)
-
-	element, err = driver.FindElement(guia2.BySelector{UiAutomator: "new UiSelector().text(\"科技\");"})
-	checkErr(err)
-
-	time.Sleep(time.Millisecond * 1200)
 
 	err = element.Click()
 	checkErr(err)
 
-	time.Sleep(time.Second * 1)
-
-	err = driver.Swipe(startX, startY, endX, endY/2)
+	element, err = driver.FindElement(guia2.BySelector{UiAutomator: "new UiSelector().textStartsWith(\"查看更多\");"})
 	checkErr(err)
 
-	elements, err := driver.FindElements(guia2.BySelector{ResourceIdID: "cn.xuexi.android:id/general_card_image_id"})
-	checkErr(err)
-	time.Sleep(time.Second * 1)
-
-	elem = elements[len(elements)-1]
-	checkErr(elem.Click())
-	time.Sleep(time.Second * 1)
-
-	err = driver.ScrollTo(guia2.BySelector{ContentDescription: "点赞"})
-	checkErr(err)
-
-	element, err = driver.FindElement(guia2.BySelector{ClassName: "android.widget.TextView"})
-	checkErr(err)
 	checkErr(element.Click())
-	time.Sleep(time.Millisecond * 500)
 
-	elem, err = driver.FindElement(guia2.BySelector{ClassName: "android.widget.EditText"})
+	exists := func(d *guia2.Driver) (bool, error) {
+		element, err = driver.FindElement(guia2.BySelector{UiAutomator: "new UiSelector().text(\"关注\");"})
+		if err == nil {
+			return true, nil
+		}
+		return false, nil
+	}
+	err = driver.Wait(exists)
 	checkErr(err)
 
-	err = elem.SendKeys("test " + time.Now().Format("2006-01-02 15:04:05"))
+	element, err = driver.FindElement(guia2.BySelector{UiAutomator: "new UiSelector().textContains(\" 图像\");"})
 	checkErr(err)
-	time.Sleep(time.Second * 1)
 
-	element, err = driver.FindElement(guia2.BySelector{UiAutomator: "new UiSelector().text(\"取消\");"})
-	checkErr(err)
 	checkErr(element.Click())
+
+	err = driver.ScrollTo(guia2.BySelector{UiAutomator: "new UiSelector().textContains(\"全部评论\");"})
+	checkErr(err)
 
 	// element, err = driver.FindElement(guia2.BySelector{ResourceIdID: "cn.xuexi.android:id/TOP_LAYER_VIEW_ID"})
 	// checkErr(err)
@@ -134,10 +106,10 @@ func checkErr(err error, msg ...string) {
 
 ```
 
-> 以上代码仅使用了 `网易MuMu` (`Android` 版本: `6.0.1`) 进行了测试。
+> 以上代码仅使用了 `小米8` 进行了测试。
 
 
-![example](https://raw.githubusercontent.com/electricbubble/ImageHosting/master/img/202008051855_guia2.gif)
+![example](https://github.com/electricbubble/ImageHosting/blob/master/img/202008091517_guia2.gif)
 
 
 ## TODO
