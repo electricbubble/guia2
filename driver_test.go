@@ -462,8 +462,15 @@ func TestDriver_PressKeyCode(t *testing.T) {
 
 	SetDebug(true)
 
-	// TODO PressKeyCode
-	err = driver.PressKeyCode(-1, -1, -1)
+	err = driver.PressKeyCodeAsync(KCx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = driver.PressKeyCodeAsync(KCx, KMCapLocked)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = driver.PressKeyCodeAsync(KCExplorer)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -614,16 +614,25 @@ func (d *Driver) PressBack() (err error) {
 // }
 // TODO register(postHandler, new LongPressKeyCode("/wd/hub/session/:sessionId/appium/device/long_press_keycode"))
 
-// PressKeyCode simulates a short press using a key code.
-func (d *Driver) PressKeyCode(keyCode, metaState, flags int) (err error) {
-	// TODO register(postHandler, new PressKeyCode("/wd/hub/session/:sessionId/appium/device/press_keycode"))
+func (d *Driver) _pressKeyCode(keyCode KeyCode, metaState KeyMeta, flags ...int) (err error) {
+	// TODO register(postHandler, new PressKeyCodeAsync("/wd/hub/session/:sessionId/appium/device/press_keycode"))
 	data := map[string]interface{}{
 		"keycode":   keyCode,
 		"metastate": metaState,
-		"flags":     flags,
+	}
+	if len(flags) != 0 {
+		data["flags"] = flags[0]
 	}
 	_, err = d.executePost(data, "/session", d.sessionId, "appium/device/press_keycode")
 	return
+}
+
+// PressKeyCodeAsync simulates a short press using a key code.
+func (d *Driver) PressKeyCodeAsync(keyCode KeyCode, metaState ...KeyMeta) (err error) {
+	if len(metaState) == 0 {
+		metaState = []KeyMeta{0}
+	}
+	return d._pressKeyCode(keyCode, metaState[0])
 }
 
 func (d *Driver) TouchDown(x, y int) (err error) {
@@ -925,7 +934,7 @@ func (d *Driver) FindElement(by BySelector) (elem *Element, err error) {
 	return d._findElement(by.getMethodAndSelector())
 }
 
-type Condition func(s *Driver) (bool, error)
+type Condition func(d *Driver) (bool, error)
 
 func (d *Driver) _waitWithTimeoutAndInterval(condition Condition, timeout, interval time.Duration) (err error) {
 	startTime := time.Now()
