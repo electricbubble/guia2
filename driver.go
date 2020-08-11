@@ -460,10 +460,12 @@ func (d *Driver) AlertText() (text string, err error) {
 
 type (
 	Point struct {
-		X, Y int
+		X int `json:"x"`
+		Y int `json:"y"`
 	}
 	PointF struct {
-		X, Y float64
+		X float64 `json:"x"`
+		Y float64 `json:"y"`
 	}
 )
 
@@ -757,7 +759,61 @@ func (d *Driver) ScrollTo(by BySelector, maxSwipes ...int) (err error) {
 	return d._scrollTo(method, selector, maxSwipes[0])
 }
 
-// TODO register(postHandler, new MultiPointerGesture("/wd/hub/session/:sessionId/touch/multi/perform"))
+type touchGesture struct {
+	Touch PointF  `json:"touch"`
+	Time  float64 `json:"time"`
+}
+
+type TouchAction []touchGesture
+
+func NewTouchAction(cap ...int) *TouchAction {
+	if len(cap) == 0 || cap[0] <= 0 {
+		cap = []int{8}
+	}
+	tmp := make(TouchAction, 0, cap[0])
+	return &tmp
+}
+
+func (ta *TouchAction) Add(x, y int, startTime ...float64) *TouchAction {
+	return ta.AddFloat(float64(x), float64(y), startTime...)
+}
+
+func (ta *TouchAction) AddFloat(x, y float64, startTime ...float64) *TouchAction {
+	if len(startTime) == 0 {
+		var tmp float64 = 0
+		if len(*ta) != 0 {
+			g := (*ta)[len(*ta)-1]
+			tmp = g.Time + 0.05
+		}
+		startTime = []float64{tmp}
+	}
+	*ta = append(*ta, touchGesture{Touch: PointF{x, y}, Time: startTime[0]})
+	return ta
+}
+
+func (ta *TouchAction) AddPoint(point Point, startTime ...float64) *TouchAction {
+	return ta.AddFloat(float64(point.X), float64(point.Y), startTime...)
+}
+
+func (ta *TouchAction) AddPointF(point PointF, startTime ...float64) *TouchAction {
+	return ta.AddFloat(point.X, point.Y, startTime...)
+}
+
+func (d *Driver) MultiPointerGesture(gesture1 *TouchAction, gesture2 *TouchAction, tas ...*TouchAction) (err error) {
+	// Must provide coordinates for at least 2 pointers
+	actions := make([]*TouchAction, 0)
+	actions = append(actions, gesture1, gesture2)
+	if len(tas) != 0 {
+		actions = append(actions, tas...)
+	}
+	data := map[string]interface{}{
+		"actions": actions,
+	}
+	// register(postHandler, new MultiPointerGesture("/wd/hub/session/:sessionId/touch/multi/perform"))
+	_, err = d.executePost(data, "/session", d.sessionId, "/touch/multi/perform")
+	return
+}
+
 // TODO register(postHandler, new W3CActions("/wd/hub/session/:sessionId/actions"))
 
 type ClipDataType string

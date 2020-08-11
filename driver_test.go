@@ -636,6 +636,26 @@ func TestDriver_ScrollTo(t *testing.T) {
 	}
 }
 
+func TestDriver_MultiPointerGesture(t *testing.T) {
+	driver, err := NewDriver(nil, uiaServerURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	SetDebug(true)
+
+	gesture1 := NewTouchAction().Add(150, 340, 0.35).AddFloat(50, 300)
+	gesture2 := NewTouchAction().Add(200, 340).AddFloat(300, 300)
+	gesture3 := NewTouchAction().Add(300, 500).AddFloat(350, 500).AddPoint(Point{300, 550}).AddPointF(PointF{350, 550})
+	_ = gesture3
+
+	// err = driver.MultiPointerGesture(gesture1, gesture2)
+	err = driver.MultiPointerGesture(gesture1, gesture2, gesture3)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestDriver_GetClipboard(t *testing.T) {
 	driver, err := NewDriver(nil, uiaServerURL)
 	if err != nil {
