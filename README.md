@@ -114,8 +114,8 @@ func checkErr(err error, msg ...string) {
 
 ## TODO
 
-- LongPressKeyCode
-- PressKeyCode
+- [x] LongPressKeyCode
+- [x] PressKeyCode
 - MultiPointerGesture
 - W3CActions
 

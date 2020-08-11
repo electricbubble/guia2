@@ -612,13 +612,27 @@ func (d *Driver) PressBack() (err error) {
 //    public Integer metastate;
 //    public Integer flags;
 // }
-// TODO register(postHandler, new LongPressKeyCode("/wd/hub/session/:sessionId/appium/device/long_press_keycode"))
-
-func (d *Driver) _pressKeyCode(keyCode KeyCode, metaState KeyMeta, flags ...int) (err error) {
-	// TODO register(postHandler, new PressKeyCodeAsync("/wd/hub/session/:sessionId/appium/device/press_keycode"))
+func (d *Driver) LongPressKeyCode(keyCode KeyCode, metaState KeyMeta, flags ...KeyFlag) (err error) {
+	if len(flags) == 0 {
+		flags = []KeyFlag{KFFromSystem}
+	}
 	data := map[string]interface{}{
 		"keycode":   keyCode,
 		"metastate": metaState,
+		"flags":     flags[0],
+	}
+	// register(postHandler, new LongPressKeyCode("/wd/hub/session/:sessionId/appium/device/long_press_keycode"))
+	_, err = d.executePost(data, "/session", d.sessionId, "/appium/device/long_press_keycode")
+	return
+}
+
+func (d *Driver) _pressKeyCode(keyCode KeyCode, metaState KeyMeta, flags ...KeyFlag) (err error) {
+	// register(postHandler, new PressKeyCodeAsync("/wd/hub/session/:sessionId/appium/device/press_keycode"))
+	data := map[string]interface{}{
+		"keycode": keyCode,
+	}
+	if metaState != KMEmpty {
+		data["metastate"] = metaState
 	}
 	if len(flags) != 0 {
 		data["flags"] = flags[0]
@@ -627,10 +641,17 @@ func (d *Driver) _pressKeyCode(keyCode KeyCode, metaState KeyMeta, flags ...int)
 	return
 }
 
+func (d *Driver) PressKeyCode(keyCode KeyCode, metaState KeyMeta, flags ...KeyFlag) (err error) {
+	if len(flags) == 0 {
+		flags = []KeyFlag{KFFromSystem}
+	}
+	return d._pressKeyCode(keyCode, metaState, KFFromSystem)
+}
+
 // PressKeyCodeAsync simulates a short press using a key code.
 func (d *Driver) PressKeyCodeAsync(keyCode KeyCode, metaState ...KeyMeta) (err error) {
 	if len(metaState) == 0 {
-		metaState = []KeyMeta{0}
+		metaState = []KeyMeta{KMEmpty}
 	}
 	return d._pressKeyCode(keyCode, metaState[0])
 }

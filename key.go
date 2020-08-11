@@ -3,6 +3,7 @@ package guia2
 type KeyMeta int
 
 const (
+	KMEmpty     KeyMeta = 0     // As a `null`
 	KMCapLocked KeyMeta = 0x100 // SHIFT key locked in CAPS mode.
 	KMAltLocked KeyMeta = 0x200 // ALT key locked.
 	KMSymLocked KeyMeta = 0x400 // SYM key locked.

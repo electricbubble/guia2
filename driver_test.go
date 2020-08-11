@@ -470,7 +470,26 @@ func TestDriver_PressKeyCode(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = driver.PressKeyCodeAsync(KCExplorer)
+	// err = driver.PressKeyCodeAsync(KCExplorer)
+	// if err != nil {
+	// 	t.Fatal(err)
+	// }
+
+	err = driver.PressKeyCode(KCExplorer, KMEmpty)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDriver_LongPressKeyCode(t *testing.T) {
+	driver, err := NewDriver(nil, uiaServerURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	SetDebug(true)
+
+	err = driver.LongPressKeyCode(KCAt, KMEmpty)
 	if err != nil {
 		t.Fatal(err)
 	}
