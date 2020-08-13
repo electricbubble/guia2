@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -814,7 +816,230 @@ func (d *Driver) MultiPointerGesture(gesture1 *TouchAction, gesture2 *TouchActio
 	return
 }
 
-// TODO register(postHandler, new W3CActions("/wd/hub/session/:sessionId/actions"))
+type w3cGesture map[string]interface{}
+
+func _newW3CGesture() w3cGesture {
+	return make(w3cGesture)
+}
+
+func (g w3cGesture) _set(key string, value interface{}) w3cGesture {
+	g[key] = value
+	return g
+}
+
+func (g w3cGesture) pause(duration float64) w3cGesture {
+	return g._set("type", "pause").
+		_set("duration", duration)
+}
+
+func (g w3cGesture) keyDown(value string) w3cGesture {
+	return g._set("type", "keyDown").
+		_set("value", value)
+}
+
+func (g w3cGesture) keyUp(value string) w3cGesture {
+	return g._set("type", "keyUp").
+		_set("value", value)
+}
+
+func (g w3cGesture) pointerDown(button int) w3cGesture {
+	return g._set("type", "pointerDown")._set("button", button)
+}
+
+func (g w3cGesture) pointerUp(button int) w3cGesture {
+	return g._set("type", "pointerUp")._set("button", button)
+}
+
+func (g w3cGesture) pointerMove(x, y float64, origin string, duration float64, pressureAndSize ...float64) w3cGesture {
+	switch len(pressureAndSize) {
+	case 1:
+		g._set("pressure", pressureAndSize[0])
+	case 2:
+		g._set("pressure", pressureAndSize[0])
+		g._set("size", pressureAndSize[1])
+	}
+	return g._set("type", "pointerMove").
+		_set("duration", duration).
+		_set("origin", origin).
+		_set("x", x).
+		_set("y", y)
+
+}
+
+func (g w3cGesture) size(size ...float64) w3cGesture {
+	if len(size) == 0 {
+		size = []float64{1.0}
+	}
+	return g._set("size", size[0])
+}
+
+func (g w3cGesture) pressure(pressure ...float64) w3cGesture {
+	if len(pressure) == 0 {
+		pressure = []float64{1.0}
+	}
+	return g._set("pressure", pressure[0])
+}
+
+type W3CGestures []w3cGesture
+
+func NewW3CGestures(cap ...int) *W3CGestures {
+	if len(cap) == 0 || cap[0] <= 0 {
+		cap = []int{8}
+	}
+	tmp := make(W3CGestures, 0, cap[0])
+	return &tmp
+}
+
+func (g *W3CGestures) Pause(duration ...float64) *W3CGestures {
+	if len(duration) == 0 || duration[0] < 0 {
+		duration = []float64{0.5}
+	}
+	*g = append(*g, _newW3CGesture().pause(duration[0]*1000))
+	return g
+}
+
+func (g *W3CGestures) KeyDown(value string) *W3CGestures {
+	*g = append(*g, _newW3CGesture().keyDown(value))
+	return g
+}
+
+func (g *W3CGestures) KeyUp(value string) *W3CGestures {
+	*g = append(*g, _newW3CGesture().keyUp(value))
+	return g
+}
+
+func (g *W3CGestures) SendKeys(text string) *W3CGestures {
+	ss := strings.Split(text, "")
+	for i := range ss {
+		g.KeyDown(ss[i])
+		g.KeyUp(ss[i])
+	}
+	return g
+}
+
+type W3CMouseButtonType int
+
+const (
+	MBTLeft   W3CMouseButtonType = 0
+	MBTMiddle W3CMouseButtonType = 1
+	MBTRight  W3CMouseButtonType = 2
+)
+
+func (g *W3CGestures) PointerDown(button ...W3CMouseButtonType) *W3CGestures {
+	if len(button) == 0 {
+		button = []W3CMouseButtonType{MBTLeft}
+	}
+	*g = append(*g, _newW3CGesture().pointerDown(int(button[0])))
+	return g
+}
+
+func (g *W3CGestures) PointerUp(button ...W3CMouseButtonType) *W3CGestures {
+	if len(button) == 0 {
+		button = []W3CMouseButtonType{MBTLeft}
+	}
+	*g = append(*g, _newW3CGesture().pointerUp(int(button[0])))
+	return g
+}
+
+type W3CPointerMoveType string
+
+const (
+	PMTViewport W3CPointerMoveType = "viewport"
+	PMTPointer  W3CPointerMoveType = "pointer"
+)
+
+func (g *W3CGestures) PointerMove(x, y float64, origin interface{}, duration float64, pressure, size float64) *W3CGestures {
+	val := ""
+	switch v := origin.(type) {
+	case string:
+		val = v
+	case W3CPointerMoveType:
+		val = string(v)
+	case *Element:
+		val = v.id
+	default:
+		val = string(PMTViewport)
+	}
+	*g = append(*g, _newW3CGesture().pointerMove(x, y, val, duration, pressure, size))
+	return g
+}
+
+func (g *W3CGestures) PointerMoveTo(x, y float64, duration ...float64) *W3CGestures {
+	if len(duration) == 0 || duration[0] < 0 {
+		duration = []float64{0.5}
+	}
+	*g = append(*g, _newW3CGesture().pointerMove(x, y, string(PMTViewport), duration[0]*1000))
+	return g
+}
+
+func (g *W3CGestures) PointerMoveRelative(x, y float64, duration ...float64) *W3CGestures {
+	if len(duration) == 0 || duration[0] < 0 {
+		duration = []float64{0.5}
+	}
+	*g = append(*g, _newW3CGesture().pointerMove(x, y, string(PMTPointer), duration[0]*1000))
+	return g
+}
+
+func (g *W3CGestures) PointerMouseOver(x, y float64, element *Element, duration ...float64) *W3CGestures {
+	if len(duration) == 0 || duration[0] < 0 {
+		duration = []float64{0.5}
+	}
+	*g = append(*g, _newW3CGesture().pointerMove(x, y, element.id, duration[0]*1000))
+	return g
+}
+
+type W3CAction map[string]interface{}
+
+type W3CActionType string
+
+const (
+	_         W3CActionType = "none"
+	ATKey     W3CActionType = "key"
+	ATPointer W3CActionType = "pointer"
+)
+
+type W3CPointerType string
+
+const (
+	PTMouse W3CPointerType = "mouse"
+	PTPen   W3CPointerType = "pen"
+	PTTouch W3CPointerType = "touch"
+)
+
+func NewW3CAction(actionType W3CActionType, gestures *W3CGestures, pointerType ...W3CPointerType) W3CAction {
+	w3cAction := make(W3CAction)
+	w3cAction["type"] = actionType
+	w3cAction["actions"] = gestures
+	if actionType != ATPointer {
+		return w3cAction
+	}
+
+	if len(pointerType) == 0 {
+		pointerType = []W3CPointerType{PTTouch}
+	}
+	type W3CItemParameters struct {
+		PointerType W3CPointerType `json:"pointerType"`
+	}
+	w3cAction["parameters"] = W3CItemParameters{PointerType: pointerType[0]}
+	return w3cAction
+}
+
+func (d *Driver) PerformW3CActions(action W3CAction, acts ...W3CAction) (err error) {
+	var actionId uint64 = 1
+	acts = append([]W3CAction{action}, acts...)
+	for i := range acts {
+		item := acts[i]
+		item["id"] = strconv.FormatUint(actionId, 10)
+		actionId++
+		acts[i] = item
+	}
+	data := map[string]interface{}{
+		"actions": acts,
+	}
+	// register(postHandler, new W3CActions("/wd/hub/session/:sessionId/actions"))
+	_, err = d.executePost(data, "/session", d.sessionId, "/actions")
+	return
+}
 
 type ClipDataType string
 

@@ -656,6 +656,50 @@ func TestDriver_MultiPointerGesture(t *testing.T) {
 	}
 }
 
+func TestDriver_PerformW3CActions(t *testing.T) {
+	driver, err := NewDriver(nil, uiaServerURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	SetDebug(true)
+
+	// actionKey := NewW3CAction(ATKey, NewW3CGestures().KeyDown("g").KeyUp("g").Pause().KeyDown("o").KeyUp("o"))
+	// actionKey := NewW3CAction(ATKey, NewW3CGestures().SendKeys("golang"))
+	// err = driver.PerformW3CActions(actionKey)
+	// if err != nil {
+	// 	t.Fatal(err)
+	// }
+
+	// var queryField map[string]string
+	// queryField = make(map[string]string)
+	// {
+	// 	queryField = map[string]string{
+	// 		"a": "",
+	// 	}
+	// }
+
+	elem, err := driver.FindElement(BySelector{ResourceIdID: "com.android.settings:id/search"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// actionPointer := NewW3CAction(ATPointer, NewW3CGestures().PointerMove(0, 0, elem.id).PointerDown().Pause(3).PointerUp())
+	// actionPointer := NewW3CAction(ATPointer,
+	// 	NewW3CGestures().PointerMove(400, 500, "viewport").PointerDown().Pause(2).
+	// 		PointerMove(0, 0, elem.id).Pause(2).
+	// 		PointerMove(20, 0, "pointer").Pause(2).
+	// 		PointerUp(),
+	// )
+	actionPointer := NewW3CAction(ATPointer,
+		NewW3CGestures().PointerMoveTo(400, 500).PointerDown().
+			PointerMouseOver(0, 0, elem).
+			PointerMoveRelative(20, 0).PointerUp())
+	err = driver.PerformW3CActions(actionPointer)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestDriver_GetClipboard(t *testing.T) {
 	driver, err := NewDriver(nil, uiaServerURL)
 	if err != nil {

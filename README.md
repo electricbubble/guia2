@@ -112,13 +112,6 @@ func checkErr(err error, msg ...string) {
 ![example](https://github.com/electricbubble/ImageHosting/blob/master/img/202008091517_guia2.gif)
 
 
-## TODO
-
-- [x] LongPressKeyCode
-- [x] PressKeyCode
-- [x] MultiPointerGesture
-- [ ] W3CActions
-
 ## Thanks
 
 Thank you [JetBrains](https://www.jetbrains.com/?from=gwda) for providing free open source licenses
