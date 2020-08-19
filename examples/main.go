@@ -2,12 +2,14 @@ package main
 
 import (
 	"github.com/electricbubble/guia2"
+	"io/ioutil"
 	"log"
+	"os"
 )
 
 func main() {
 	// driver, err := guia2.NewDriver(guia2.NewEmptyCapabilities(), "http://localhost:6790/wd/hub")
-	driver, err := guia2.NewDriver(nil, "http://localhost:6790/wd/hub")
+	driver, err := guia2.NewDriver(nil, "http://192.168.1.28:6790/wd/hub")
 	checkErr(err)
 
 	// fmt.Println(driver.Source())
@@ -30,44 +32,53 @@ func main() {
 	err = driver.SwipePointF(startPoint, endPoint)
 	checkErr(err)
 
-	element, err := driver.FindElement(guia2.BySelector{UiAutomator: "new UiSelector().textStartsWith(\"MIUI\");"})
+	element, err := driver.FindElement(guia2.BySelector{ResourceIdID: "tv.danmaku.bili:id/expand_search"})
 	checkErr(err)
 
 	err = element.Click()
 	checkErr(err)
 
-	element, err = driver.FindElement(guia2.BySelector{UiAutomator: "new UiSelector().textStartsWith(\"查看更多\");"})
-	checkErr(err)
-
-	checkErr(element.Click())
-
+	bySelector := guia2.BySelector{UiAutomator: guia2.NewUiSelectorHelper().Focused(true).String()}
 	exists := func(d *guia2.Driver) (bool, error) {
-		element, err = driver.FindElement(guia2.BySelector{UiAutomator: "new UiSelector().text(\"关注\");"})
+		element, err = d.FindElement(bySelector)
 		if err == nil {
 			return true, nil
 		}
 		return false, nil
 	}
+
 	err = driver.Wait(exists)
 	checkErr(err)
 
-	element, err = driver.FindElement(guia2.BySelector{UiAutomator: "new UiSelector().textContains(\" 图像\");"})
+	err = element.SendKeys("雾山五行")
 	checkErr(err)
 
+	err = driver.PressKeyCode(guia2.KCEnter, guia2.KMEmpty)
+	checkErr(err)
+
+	bySelector = guia2.BySelector{UiAutomator: guia2.NewUiSelectorHelper().TextStartsWith("番剧").String()}
+	checkErr(driver.Wait(exists))
 	checkErr(element.Click())
 
-	err = driver.ScrollTo(guia2.BySelector{UiAutomator: "new UiSelector().textContains(\"全部评论\");"})
+	bySelector = guia2.BySelector{UiAutomator: guia2.NewUiSelectorHelper().Text("立即观看").String()}
+	checkErr(driver.Wait(exists))
+	checkErr(element.Click())
+
+	bySelector = guia2.BySelector{ResourceIdID: "tv.danmaku.bili:id/videoview_container_space"}
+	checkErr(driver.Wait(exists))
+
+	// time.Sleep(time.Second * 5)
+
+	screenshot, err := element.Screenshot()
+	checkErr(err)
+	userHomeDir, _ := os.UserHomeDir()
+	checkErr(ioutil.WriteFile(userHomeDir+"/Desktop/element.png", screenshot.Bytes(), 0600))
+
+	err = driver.PressKeyCode(guia2.KCMediaPause, guia2.KMEmpty)
 	checkErr(err)
 
-	// element, err = driver.FindElement(guia2.BySelector{ResourceIdID: "cn.xuexi.android:id/TOP_LAYER_VIEW_ID"})
-	// checkErr(err)
-	// elemBack, err := element.FindElement(guia2.BySelector{ClassName: "android.widget.ImageView"})
-	// checkErr(err)
-
-	// screenshot, err := elem.Screenshot()
-	// checkErr(err)
-	// ioutil.WriteFile("/path/Desktop/e1.png", screenshot.Bytes(), 0600)
-
+	err = driver.PressBack()
+	checkErr(err)
 }
 
 func checkErr(err error, msg ...string) {
