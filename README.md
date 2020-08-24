@@ -1,6 +1,12 @@
 # Golang-UIAutomator2
+[![go doc](https://godoc.org/github.com/electricbubble/guia2?status.svg)](https://pkg.go.dev/github.com/electricbubble/guia2?tab=doc)
+[![license](https://img.shields.io/github/license/electricbubble/guia2)](https://github.com/electricbubble/guia2/blob/master/LICENSE)
 
 使用 Golang 实现 [appium/appium-uiautomator2-server](https://github.com/appium/appium-uiautomator2-server) 的客户端库
+
+## 扩展库
+
+- [electricbubble/guia2-ext-opencv](https://github.com/electricbubble/guia2-ext-opencv) 直接通过指定图片进行操作
 
 ## 安装
 ```bash
@@ -12,7 +18,11 @@ go get -u github.com/electricbubble/guia2
 > 首次使用需要在 `Android` 设备中安装两个 `apk`  
 > `appium-uiautomator2-server-debug-androidTest.apk`  
 > `appium-uiautomator2-server-vXX.XX.XX.apk`
+>
+>> `apk` 可以选择通过 [appium/appium-uiautomator2-server](https://github.com/appium/appium-uiautomator2-server#building-project) 进行构建  
+>> 也可以直接从这里下载 [electricbubble/appium-uiautomator2-server-apk](https://github.com/electricbubble/appium-uiautomator2-server-apk/releases)
 >  
+>
 > 再通过 `adb` 启动 `appium-uiautomator2-server`  
 > ```bash
 > adb shell am instrument -w io.appium.uiautomator2.server.test/androidx.test.runner.AndroidJUnitRunner
