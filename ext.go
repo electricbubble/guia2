@@ -2,8 +2,141 @@ package guia2
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
+	"github.com/electricbubble/gadb"
+	"net"
+	"regexp"
+	"strings"
 )
+
+var AdbServerHost = "localhost"
+var AdbServerPort = gadb.AdbServerPort
+
+var UIA2ServerPort = 6790
+
+type Device = gadb.Device
+
+const forwardToPrefix = "forward-to-"
+
+func DeviceList() (devices []Device, err error) {
+	var adbClient gadb.Client
+	if adbClient, err = gadb.NewClientWith(AdbServerHost, AdbServerPort); err != nil {
+		return nil, err
+	}
+
+	return adbClient.DeviceList()
+}
+
+func NewUSBDriver(device ...Device) (driver *Driver, err error) {
+	if len(device) == 0 {
+		if device, err = DeviceList(); err != nil {
+			return nil, err
+		}
+	}
+
+	usbDevice := device[0]
+	var localPort int
+	if localPort, err = getFreePort(); err != nil {
+		return nil, err
+	}
+	if err = usbDevice.Forward(localPort, UIA2ServerPort); err != nil {
+		return nil, err
+	}
+
+	rawURL := fmt.Sprintf("http://%s%d:6790/wd/hub", forwardToPrefix, localPort)
+
+	if driver, err = NewDriver(NewEmptyCapabilities(), rawURL); err != nil {
+		_ = usbDevice.ForwardKill(localPort)
+		return nil, err
+	}
+	driver.usbDevice = usbDevice
+	driver.localPort = localPort
+	return
+}
+
+//  is uninitialized
+// func (d *Driver) isInitialized() bool {
+func (d *Driver) check() error {
+	if d.usbDevice.Serial() == "" {
+		return errors.New("device is uninitialized")
+	}
+	return nil
+}
+
+// Dispose corresponds to the command:
+//  adb -s $serial forward --remove $localPort
+func (d *Driver) Dispose() (err error) {
+	if err = d.check(); err != nil {
+		return err
+	}
+	return d.usbDevice.ForwardKill(d.localPort)
+}
+
+func (d *Driver) ActiveAppActivity() (appActivity string, err error) {
+	if err = d.check(); err != nil {
+		return "", err
+	}
+
+	var sOutput string
+	if sOutput, err = d.usbDevice.RunShellCommand("dumpsys activity activities | grep mResumedActivity"); err != nil {
+		return "", err
+	}
+	re := regexp.MustCompile(`\{(.+?)\}`)
+	if !re.MatchString(sOutput) {
+		return "", fmt.Errorf("active app activity: %s", strings.TrimSpace(sOutput))
+	}
+	fields := strings.Fields(re.FindStringSubmatch(sOutput)[1])
+	appActivity = fields[2]
+	return
+}
+
+func (d *Driver) ActiveAppPackageName() (appPackageName string, err error) {
+	var activity string
+	if activity, err = d.ActiveAppActivity(); err != nil {
+		return "", err
+	}
+	appPackageName = strings.Split(activity, "/")[0]
+	return
+}
+
+func (d *Driver) AppLaunch(appPackageName string) (err error) {
+	if err = d.check(); err != nil {
+		return err
+	}
+
+	var sOutput string
+	if sOutput, err = d.usbDevice.RunShellCommand("monkey -p", appPackageName, "-c android.intent.category.LAUNCHER 1"); err != nil {
+		return err
+	}
+	if strings.Contains(sOutput, "monkey aborted") {
+		return fmt.Errorf("app launch: %s", strings.TrimSpace(sOutput))
+	}
+	return
+}
+
+func (d *Driver) AppTerminate(appPackageName string) (err error) {
+	if err = d.check(); err != nil {
+		return err
+	}
+
+	_, err = d.usbDevice.RunShellCommand("am force-stop", appPackageName)
+	return
+}
+
+func getFreePort() (int, error) {
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		return 0, fmt.Errorf("free port: %w", err)
+	}
+
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return 0, fmt.Errorf("free port: %w", err)
+	}
+	defer func() { _ = l.Close() }()
+	return l.Addr().(*net.TCPAddr).Port, nil
+}
 
 type UiSelectorHelper struct {
 	value *bytes.Buffer

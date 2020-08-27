@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/electricbubble/gadb"
 	"net/http"
 	"net/url"
 	"path"
@@ -17,7 +18,11 @@ import (
 type Driver struct {
 	urlPrefix *url.URL
 	sessionId string
-	// sessionIDCache map[string]bool
+
+	// ext.go
+
+	usbDevice gadb.Device
+	localPort int
 }
 
 func (d *Driver) _requestURL(elem ...string) string {
@@ -50,13 +55,7 @@ func NewEmptyCapabilities() Capabilities {
 	return make(Capabilities)
 }
 
-// func (caps Capabilities) tmpCaps() {
-// }
-
 func NewDriver(capabilities Capabilities, urlPrefix string) (driver *Driver, err error) {
-	// driver = &Driver{
-	// 	sessionIDCache: make(map[string]bool),
-	// }
 	if capabilities == nil {
 		capabilities = NewEmptyCapabilities()
 	}
@@ -68,19 +67,7 @@ func NewDriver(capabilities Capabilities, urlPrefix string) (driver *Driver, err
 		return nil, err
 	}
 	return
-	// return NewDriverWithCapabilities(capabilities, urlPrefix)
 }
-
-// func NewDriverWithCapabilities(capabilities Capabilities, urlPrefix string) (driver *Driver, err error) {
-// 	driver = new(Driver)
-// 	if driver.urlPrefix, err = url.Parse(urlPrefix); err != nil {
-// 		return nil, err
-// 	}
-// 	if driver.sessionID, err = driver.NewSession(capabilities); err != nil {
-// 		return nil, err
-// 	}
-// 	return
-// }
 
 func (d *Driver) NewSession(capabilities Capabilities) (sessionID string, err error) {
 	// register(postHandler, new NewSession("/wd/hub/session"))
@@ -113,14 +100,6 @@ func (d *Driver) Quit() (err error) {
 func (d *Driver) ActiveSessionID() string {
 	return d.sessionId
 }
-
-// func (d *Driver) SwitchSession(sessionID string) error {
-// 	if _, ok := d.sessionIdCache[sessionID]; !ok {
-// 		return errors.New("non-existent sessionID")
-// 	}
-// 	d.sessionId = sessionID
-// 	return nil
-// }
 
 func (d *Driver) SessionIDs() (sessionIDs []string, err error) {
 	// register(getHandler, new GetSessions("/wd/hub/sessions"))

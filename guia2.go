@@ -2,12 +2,18 @@ package guia2
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/electricbubble/gadb"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
+	"net/url"
 	"reflect"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -24,20 +30,49 @@ var uia2Header = map[string]string{
 	"accept":       "application/json",
 }
 
-func executeHTTP(method string, url string, rawBody []byte) (rawResp RawResponse, err error) {
-	debugLog(fmt.Sprintf("--> %s %s\n%s", method, url, rawBody))
+func executeHTTP(method string, rawURL string, rawBody []byte) (rawResp RawResponse, err error) {
+	var localPort int
+	{
+		tmpURL, _ := url.Parse(rawURL)
+		hostname := tmpURL.Hostname()
+		if strings.HasPrefix(hostname, forwardToPrefix) {
+			localPort, _ = strconv.Atoi(strings.TrimPrefix(hostname, forwardToPrefix))
+			rawURL = strings.Replace(rawURL, hostname, "localhost", 1)
+		}
+	}
+
+	tmpForwardLog := "\b"
+	if localPort != 0 {
+		tmpForwardLog = fmt.Sprintf("localPort=%d", localPort)
+	}
+	debugLog(fmt.Sprintf("--> %s %s %s\n%s", method, rawURL, tmpForwardLog, rawBody))
 
 	var req *http.Request
-	if req, err = http.NewRequest(method, url, bytes.NewBuffer(rawBody)); err != nil {
+	if req, err = http.NewRequest(method, rawURL, bytes.NewBuffer(rawBody)); err != nil {
 		return
 	}
 	for k, v := range uia2Header {
 		req.Header.Set(k, v)
 	}
 
+	tmpHTTPClient := HTTPClient
+
+	if localPort != 0 {
+		var conn net.Conn
+		if conn, err = net.Dial("tcp", fmt.Sprintf(":%d", localPort)); err != nil {
+			return nil, fmt.Errorf("adb forward: %w", err)
+		}
+		tmpHTTPClient.Transport = &http.Transport{
+			DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
+				return conn, nil
+			},
+		}
+		defer func() { _ = conn.Close() }()
+	}
+
 	start := time.Now()
 	var resp *http.Response
-	if resp, err = HTTPClient.Do(req); err != nil {
+	if resp, err = tmpHTTPClient.Do(req); err != nil {
 		return nil, err
 	}
 	defer func() {
@@ -45,7 +80,7 @@ func executeHTTP(method string, url string, rawBody []byte) (rawResp RawResponse
 	}()
 
 	rawResp, err = ioutil.ReadAll(resp.Body)
-	debugLog(fmt.Sprintf("<-- %s %s %d %s\n%s\n", method, url, resp.StatusCode, time.Now().Sub(start), rawResp))
+	debugLog(fmt.Sprintf("<-- %s %s %d %s %s\n%s\n", method, rawURL, resp.StatusCode, time.Now().Sub(start), tmpForwardLog, rawResp))
 	if err != nil {
 		return nil, err
 	}
@@ -124,8 +159,11 @@ func (by BySelector) getMethodAndSelector() (method, selector string) {
 var debugFlag = false
 
 // SetDebug set debug mode
-func SetDebug(debug bool) {
+func SetDebug(debug bool, adbDebug ...bool) {
 	debugFlag = debug
+	if len(adbDebug) > 0 {
+		gadb.SetDebug(adbDebug[0])
+	}
 }
 
 func debugLog(msg string) {
