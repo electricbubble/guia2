@@ -61,6 +61,7 @@ go get -u github.com/electricbubble/guia2
 package main
 
 import (
+	"fmt"
 	"github.com/electricbubble/guia2"
 	"io/ioutil"
 	"log"
@@ -101,15 +102,7 @@ func main() {
 	checkErr(err)
 
 	bySelector := guia2.BySelector{UiAutomator: guia2.NewUiSelectorHelper().Focused(true).String()}
-	exists := func(d *guia2.Driver) (bool, error) {
-		element, err = d.FindElement(bySelector)
-		if err == nil {
-			return true, nil
-		}
-		return false, nil
-	}
-
-	err = driver.Wait(exists)
+	element, err = waitForElement(driver, bySelector)
 	checkErr(err)
 
 	err = element.SendKeys("雾山五行")
@@ -119,15 +112,18 @@ func main() {
 	checkErr(err)
 
 	bySelector = guia2.BySelector{UiAutomator: guia2.NewUiSelectorHelper().TextStartsWith("番剧").String()}
-	checkErr(driver.Wait(exists))
+	element, err = waitForElement(driver, bySelector)
+	checkErr(err)
 	checkErr(element.Click())
 
 	bySelector = guia2.BySelector{UiAutomator: guia2.NewUiSelectorHelper().Text("立即观看").String()}
-	checkErr(driver.Wait(exists))
+	element, err = waitForElement(driver, bySelector)
+	checkErr(err)
 	checkErr(element.Click())
 
 	bySelector = guia2.BySelector{ResourceIdID: "tv.danmaku.bili:id/videoview_container_space"}
-	checkErr(driver.Wait(exists))
+	element, err = waitForElement(driver, bySelector)
+	checkErr(err)
 
 	// time.Sleep(time.Second * 5)
 
@@ -141,6 +137,22 @@ func main() {
 
 	err = driver.PressBack()
 	checkErr(err)
+}
+
+func waitForElement(driver *guia2.Driver, bySelector guia2.BySelector) (element *guia2.Element, err error) {
+	var ce error
+	exists := func(d *guia2.Driver) (bool, error) {
+		element, ce = d.FindElement(bySelector)
+		if ce == nil {
+			return true, nil
+		}
+		// 如果直接返回 error 将直接终止 `driver.Wait`
+		return false, nil
+	}
+	if err = driver.Wait(exists); err != nil {
+		return nil, fmt.Errorf("%s: %w", err.Error(), ce)
+	}
+	return
 }
 
 func checkErr(err error, msg ...string) {
