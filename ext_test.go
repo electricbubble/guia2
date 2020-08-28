@@ -116,3 +116,16 @@ func TestDriver_AppTerminate(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestNewWiFiDriver(t *testing.T) {
+	driver, err := NewWiFiDriver("192.168.1.28")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// SetDebug(false, true)
+	_, err = driver.ActiveAppActivity()
+	if err != nil {
+		t.Fatal(err)
+	}
+}

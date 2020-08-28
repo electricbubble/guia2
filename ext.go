@@ -55,11 +55,43 @@ func NewUSBDriver(device ...Device) (driver *Driver, err error) {
 	return
 }
 
-//  is uninitialized
-// func (d *Driver) isInitialized() bool {
+func NewWiFiDriver(ip string, uia2Port ...int) (driver *Driver, err error) {
+	if len(uia2Port) == 0 {
+		uia2Port = []int{UIA2ServerPort}
+	}
+	var devices []Device
+	if devices, err = DeviceList(); err != nil {
+		return nil, err
+	}
+
+	// rawURL := fmt.Sprintf("http://%s:%d/wd/hub", strings.Split(ip, ":")[0], uia2Port[0])
+	rawURL := fmt.Sprintf("http://%s:%d/wd/hub", ip, uia2Port[0])
+
+	var usbDevice gadb.Device
+	for i := range devices {
+		if strings.HasPrefix(devices[i].Serial(), ip) {
+			dev := devices[i]
+			deviceState, err := dev.State()
+			if err != nil || deviceState != gadb.StateOnline {
+				continue
+			}
+			usbDevice = dev
+			break
+		}
+	}
+	if usbDevice.Serial() == "" {
+		return nil, errors.New("no matching and online device found")
+	}
+	if driver, err = NewDriver(NewEmptyCapabilities(), rawURL); err != nil {
+		return nil, err
+	}
+	driver.usbDevice = usbDevice
+	return
+}
+
 func (d *Driver) check() error {
 	if d.usbDevice.Serial() == "" {
-		return errors.New("device is uninitialized")
+		return errors.New("adb daemon: the device is not ready")
 	}
 	return nil
 }
@@ -69,6 +101,9 @@ func (d *Driver) check() error {
 func (d *Driver) Dispose() (err error) {
 	if err = d.check(); err != nil {
 		return err
+	}
+	if d.localPort == 0 {
+		return nil
 	}
 	return d.usbDevice.ForwardKill(d.localPort)
 }

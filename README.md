@@ -24,9 +24,38 @@ go get -u github.com/electricbubble/guia2
 >  
 >
 > 再通过 `adb` 启动 `appium-uiautomator2-server`  
-> ```bash
+> ```shell script
 > adb shell am instrument -w io.appium.uiautomator2.server.test/androidx.test.runner.AndroidJUnitRunner
+> # ⬇️ 后台运行
+> adb shell "nohup am instrument -w io.appium.uiautomator2.server.test/androidx.test.runner.AndroidJUnitRunner >/sdcard/uia2server.log 2>&1 &"
+> # or
+> adb -s $serial shell "nohup am instrument -w io.appium.uiautomator2.server.test/androidx.test.runner.AndroidJUnitRunner >/sdcard/uia2server.log 2>&1 &"
 > ```
+
+### `guia2.NewUSBDriver()`
+该函数使用期间, `Android` 设备必须一直保持 `USB` 的连接
+
+### `guia2.NewWiFiDriver("192.168.1.28")`
+1. 先通过 `USB` 连接 `Android` 设备
+2. 让设备在 5555 端口监听 TCP/IP 连接
+    ```shell script
+    adb tcpip 5555
+   # or
+    adb -s $serial tcpip 5555
+    ```
+3. 查询 `Android` 设备的 `IP` (这一步骤开始可选择断开 `USB` 连接)
+4. 通过 `IP` 连接 `Android` 设备
+    ```shell script
+    adb connect $deviceIP
+    ```
+5. 确认连接状态
+    ```shell script
+    adb devices
+    ```
+    看到以下格式的设备, 说明连接成功
+    ```shell script
+    $deviceIP:5555    device
+    ```
 
 ```go
 package main
@@ -40,7 +69,9 @@ import (
 
 func main() {
 	// driver, err := guia2.NewDriver(guia2.NewEmptyCapabilities(), "http://localhost:6790/wd/hub")
-	driver, err := guia2.NewDriver(nil, "http://192.168.1.28:6790/wd/hub")
+	// driver, err := guia2.NewDriver(nil, "http://192.168.1.28:6790/wd/hub")
+	driver, err := guia2.NewUSBDriver()
+	// driver, err := guia2.NewWiFiDriver("192.168.1.28")
 	checkErr(err)
 
 	// fmt.Println(driver.Source())
