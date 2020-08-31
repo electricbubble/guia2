@@ -33,7 +33,7 @@ go get -u github.com/electricbubble/guia2
 > ```
 
 ### `guia2.NewUSBDriver()`
-该函数使用期间, `Android` 设备必须一直保持 `USB` 的连接
+该函数使用期间, `Android` 设备必须一直保持 `USB` 的连接 (`模拟器` 也使用该函数)
 
 ### `guia2.NewWiFiDriver("192.168.1.28")`
 1. 先通过 `USB` 连接 `Android` 设备
@@ -74,6 +74,11 @@ func main() {
 	driver, err := guia2.NewUSBDriver()
 	// driver, err := guia2.NewWiFiDriver("192.168.1.28")
 	checkErr(err)
+	defer func() { _ = driver.Dispose() }()
+
+	// err = driver.AppLaunch("tv.danmaku.bili")
+	err = driver.AppLaunch("tv.danmaku.bili", guia2.BySelector{ResourceIdID: "tv.danmaku.bili:id/action_bar_root"})
+	checkErr(err, "launch the app until the element appears")
 
 	// fmt.Println(driver.Source())
 	// return

@@ -135,7 +135,7 @@ func (d *Driver) ActiveAppPackageName() (appPackageName string, err error) {
 	return
 }
 
-func (d *Driver) AppLaunch(appPackageName string) (err error) {
+func (d *Driver) AppLaunch(appPackageName string, waitForComplete ...BySelector) (err error) {
 	if err = d.check(); err != nil {
 		return err
 	}
@@ -146,6 +146,22 @@ func (d *Driver) AppLaunch(appPackageName string) (err error) {
 	}
 	if strings.Contains(sOutput, "monkey aborted") {
 		return fmt.Errorf("app launch: %s", strings.TrimSpace(sOutput))
+	}
+
+	if len(waitForComplete) != 0 {
+		var ce error
+		exists := func(_d *Driver) (bool, error) {
+			for i := range waitForComplete {
+				_, ce = _d.FindElement(waitForComplete[i])
+				if ce == nil {
+					return true, nil
+				}
+			}
+			return false, nil
+		}
+		if err = d.WaitWithTimeoutAndInterval(exists, 45, 1.5); err != nil {
+			return fmt.Errorf("app launch (waitForComplete): %s: %w", err.Error(), ce)
+		}
 	}
 	return
 }

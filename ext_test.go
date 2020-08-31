@@ -98,10 +98,17 @@ func TestDriver_AppLaunch(t *testing.T) {
 	}
 	defer driver.Dispose()
 
-	err = driver.AppLaunch("tv.danmaku.bili")
+	// err = driver.AppLaunch("tv.danmaku.bili", BySelector{ResourceIdID: "tv.danmaku.bili:id/action_bar_root"})
+	err = driver.AppLaunch("com.android.settings", BySelector{ResourceIdID: "android:id/list"})
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	// screenshot, err := driver.Screenshot()
+	// if err != nil {
+	// 	t.Fatal(err)
+	// }
+	// t.Log(ioutil.WriteFile("/Users/hero/Desktop/s1.png", screenshot.Bytes(), 0600))
 }
 
 func TestDriver_AppTerminate(t *testing.T) {

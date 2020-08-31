@@ -14,6 +14,11 @@ func main() {
 	driver, err := guia2.NewUSBDriver()
 	// driver, err := guia2.NewWiFiDriver("192.168.1.28")
 	checkErr(err)
+	defer func() { _ = driver.Dispose() }()
+
+	// err = driver.AppLaunch("tv.danmaku.bili")
+	err = driver.AppLaunch("tv.danmaku.bili", guia2.BySelector{ResourceIdID: "tv.danmaku.bili:id/action_bar_root"})
+	checkErr(err, "launch the app until the element appears")
 
 	// fmt.Println(driver.Source())
 	// return
