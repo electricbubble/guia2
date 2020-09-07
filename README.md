@@ -69,8 +69,6 @@ import (
 )
 
 func main() {
-	// driver, err := guia2.NewDriver(guia2.NewEmptyCapabilities(), "http://localhost:6790/wd/hub")
-	// driver, err := guia2.NewDriver(nil, "http://192.168.1.28:6790/wd/hub")
 	driver, err := guia2.NewUSBDriver()
 	// driver, err := guia2.NewWiFiDriver("192.168.1.28")
 	checkErr(err)

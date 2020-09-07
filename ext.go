@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"github.com/electricbubble/gadb"
 	"net"
+	"os"
+	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -14,6 +17,8 @@ var AdbServerHost = "localhost"
 var AdbServerPort = gadb.AdbServerPort
 
 var UIA2ServerPort = 6790
+
+var DeviceTempPath = "/data/local/tmp"
 
 type Device = gadb.Device
 
@@ -172,6 +177,67 @@ func (d *Driver) AppTerminate(appPackageName string) (err error) {
 	}
 
 	_, err = d.usbDevice.RunShellCommand("am force-stop", appPackageName)
+	return
+}
+
+func (d *Driver) AppInstall(apkPath string, reinstall ...bool) (err error) {
+	if err = d.check(); err != nil {
+		return err
+	}
+
+	apkName := filepath.Base(apkPath)
+	if !strings.HasSuffix(strings.ToLower(apkName), ".apk") {
+		return fmt.Errorf("apk file must have an extension of '.apk': %s", apkPath)
+	}
+
+	var apkFile *os.File
+	if apkFile, err = os.Open(apkPath); err != nil {
+		return fmt.Errorf("apk file: %w", err)
+	}
+
+	remotePath := path.Join(DeviceTempPath, apkName)
+	if err = d.usbDevice.PushFile(apkFile, remotePath); err != nil {
+		return fmt.Errorf("apk push: %w", err)
+	}
+
+	var shellOutput string
+	if len(reinstall) != 0 && reinstall[0] {
+		shellOutput, err = d.usbDevice.RunShellCommand("pm install", "-r", remotePath)
+	} else {
+		shellOutput, err = d.usbDevice.RunShellCommand("pm install", remotePath)
+	}
+
+	if err != nil {
+		return fmt.Errorf("apk install: %w", err)
+	}
+
+	if !strings.Contains(shellOutput, "Success") {
+		return fmt.Errorf("apk installed: %s", shellOutput)
+	}
+
+	return
+}
+
+func (d *Driver) AppUninstall(appPackageName string, keepDataAndCache ...bool) (err error) {
+	if err = d.check(); err != nil {
+		return err
+	}
+
+	var shellOutput string
+	if len(keepDataAndCache) != 0 && keepDataAndCache[0] {
+		shellOutput, err = d.usbDevice.RunShellCommand("pm uninstall", "-k", appPackageName)
+	} else {
+		shellOutput, err = d.usbDevice.RunShellCommand("pm uninstall", appPackageName)
+	}
+
+	if err != nil {
+		return fmt.Errorf("apk uninstall: %w", err)
+	}
+
+	if !strings.Contains(shellOutput, "Success") {
+		return fmt.Errorf("apk uninstalled: %s", shellOutput)
+	}
+
 	return
 }
 

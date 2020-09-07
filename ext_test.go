@@ -136,3 +136,29 @@ func TestNewWiFiDriver(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestDriver_AppInstall(t *testing.T) {
+	driver, err := NewUSBDriver()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer driver.Dispose()
+
+	err = driver.AppInstall("/Users/hero/Desktop/xuexi_android_10002068.apk")
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDriver_AppUninstall(t *testing.T) {
+	driver, err := NewUSBDriver()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer driver.Dispose()
+
+	err = driver.AppUninstall("cn.xuexi.android")
+	if err != nil {
+		t.Fatal(err)
+	}
+}
