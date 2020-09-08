@@ -8,9 +8,11 @@
 
 - [electricbubble/guia2-ext-opencv](https://github.com/electricbubble/guia2-ext-opencv) 直接通过指定图片进行操作
 
+> 如果使用 `IOS` 设备, 可查看 [electricbubble/gwda](https://github.com/electricbubble/gwda)
+
 ## 安装
 ```bash
-go get -u github.com/electricbubble/guia2
+go get github.com/electricbubble/guia2
 ```
 
 ## 使用
