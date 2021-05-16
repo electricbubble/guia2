@@ -1215,6 +1215,27 @@ func (d *Driver) FindElement(by BySelector) (elem *Element, err error) {
 	return d._findElement(by.getMethodAndSelector())
 }
 
+func (d *Driver) ActiveElement() (elem *Element, err error) {
+	// register(getHandler, new ActiveElement("/wd/hub/session/:sessionId/element/active"))
+	var rawResp RawResponse
+	if rawResp, err = d.executeGet("/session", d.sessionId, "/element/active"); err != nil {
+		return nil, err
+	}
+	var reply = new(struct{ Value map[string]string })
+	if err = json.Unmarshal(rawResp, reply); err != nil {
+		return nil, err
+	}
+	if len(reply.Value) == 0 {
+		return nil, errors.New("no such element")
+	}
+	var id string
+	if id = elementIDFromValue(reply.Value); id == "" {
+		return nil, fmt.Errorf("invalid element returned: %+v", reply)
+	}
+	elem = &Element{parent: d, id: id}
+	return
+}
+
 type Condition func(d *Driver) (bool, error)
 
 func (d *Driver) _waitWithTimeoutAndInterval(condition Condition, timeout, interval time.Duration) (err error) {

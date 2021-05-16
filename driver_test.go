@@ -928,3 +928,27 @@ func TestDriver_WaitWithTimeoutAndInterval(t *testing.T) {
 	}
 
 }
+
+func TestDriver_ActiveElement(t *testing.T) {
+
+	driver, err := NewUSBDriver()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		_ = driver.Dispose()
+	}()
+
+	SetDebug(true)
+
+	element, err := driver.ActiveElement()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	SetDebug(false)
+
+	if err = element.SendKeys("test"); err != nil {
+		t.Fatal(err)
+	}
+}
